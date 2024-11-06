@@ -1,6 +1,8 @@
 module github.com/dymensionxyz/rollapp-evm
 
-go 1.22.4
+go 1.23.1
+
+toolchain go1.23.2
 
 require (
 	cosmossdk.io/errors v1.0.1
@@ -349,6 +351,7 @@ replace (
 	github.com/CosmWasm/wasmd => github.com/decentrio/wasmd v0.33.0-sdk46.2
 	github.com/centrifuge/go-substrate-rpc-client/v4 => github.com/availproject/go-substrate-rpc-client/v4 v4.0.12-avail-1.4.0-rc1-5e286e3
 	github.com/confio/ics23/go => github.com/cosmos/cosmos-sdk/ics23/go v0.8.0
+	github.com/dymensionxyz/dymint => /home/vitwit/go/src/github.com/dymensionxyz/dymint/
 	// use Evmos geth fork
 	github.com/ethereum/go-ethereum => github.com/evmos/go-ethereum v1.10.26
 	github.com/evmos/evmos/v12 => github.com/dymensionxyz/evmos/v12 v12.1.6-dymension-v0.4.2

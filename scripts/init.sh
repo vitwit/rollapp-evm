@@ -135,8 +135,8 @@ set_consensus_params() {
   DA="mock"
   case $CELESTIA_NETWORK in
 
-    "celestia" | "mocha")
-    DA="celestia"
+    "avail" | "mocha")
+    DA="avail"
     ;;
     "mock")
     DA="mock"
