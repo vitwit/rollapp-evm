@@ -44,18 +44,18 @@ if [ "$ROLLAPP_SETTLEMENT_INIT_DIR_PATH" = "" ]; then
 fi
 
 # FIXME: rename to DA_NETWORK
-if [ "$CELESTIA_NETWORK" = "" ]; then
-  echo "CELESTIA_NETWORK is not set"
+if [ "$AVAIL_NETWORK" = "" ]; then
+  echo "AVAIL_NETWORK is not set"
   exit 1
 fi
 
-if [ "$CELESTIA_HOME_DIR" = "" ]; then
-  echo "CELESTIA_HOME_DIR is not set"
+if [ "$AVAIL_HOME_DIR" = "" ]; then
+  echo "AVAIL_HOME_DIR is not set"
   exit 1
 fi
 
-if [[ $CELESTIA_NETWORK == "mock" ]]; then
-  mkdir -p "$CELESTIA_HOME_DIR"
+if [[ $AVAIL_NETWORK == "mock" ]]; then
+  mkdir -p "$AVAIL_HOME_DIR"
 fi
 
 set_denom() {
@@ -133,7 +133,7 @@ set_consensus_params() {
   COMMIT=$(git log -1 --format='%H')
 
   DA="mock"
-  case $CELESTIA_NETWORK in
+  case $AVAIL_NETWORK in
 
     "avail" | "mocha")
     DA="avail"
@@ -180,16 +180,16 @@ set_EVM_params() {
 }
 
 update_configuration() {
-  if [[ ! $CELESTIA_NETWORK == "mock" ]]; then
+  if [[ ! $AVAIL_NETWORK == "mock" ]]; then
     celestia_namespace_id=$(openssl rand -hex 10)
-    if [ ! -d "$CELESTIA_HOME_DIR" ]; then
-      echo "Celestia light client is expected to be initialized in this directory: $CELESTIA_HOME_DIR"
-      echo "but it does not exist, please initialize the light client or update the 'CELESTIA_HOME_DIR'"
+    if [ ! -d "$AVAIL_HOME_DIR" ]; then
+      echo "Celestia light client is expected to be initialized in this directory: $AVAIL_HOME_DIR"
+      echo "but it does not exist, please initialize the light client or update the 'AVAIL_HOME_DIR'"
       echo "environment variable"
       exit 1
     fi
 
-    celestia_token=$(celestia light auth admin --p2p.network "$CELESTIA_NETWORK" --node.store "$CELESTIA_HOME_DIR")
+    celestia_token=$(celestia light auth admin --p2p.network "$AVAIL_NETWORK" --node.store "$AVAIL_HOME_DIR")
 
     if [[ "$OSTYPE" == "darwin"* ]]; then
       sed -i '' "s/da_layer =.*/da_layer = \"celestia\"/" "${CONFIG_DIRECTORY}/dymint.toml"

@@ -20,6 +20,12 @@ It uses Cosmos-SDK's [simapp](https://github.com/cosmos/cosmos-sdk/tree/main/sim
 
 ## Installing / Getting started
 
+Clone the repository and checkout to `fix_daconfig` branch
+```bash
+git clone https://github.com/vitwit/rollapp-evm.git
+git fetch && git checkout rollapp-evm
+```
+
 Build and install the ```rollapp-evm``` binary:
 
 ```shell
@@ -33,8 +39,8 @@ export EXECUTABLE="rollapp-evm"
 export the following variables:
 
 ```shell
-export CELESTIA_NETWORK="mock" # for a testnet RollApp use "mocha", for mainnet - "celestia"
-export CELESTIA_HOME_DIR="${HOME}/.da"
+export AVAIL_NETWORK="avail" # replace the value with avail
+export AVAIL_HOME_DIR="${HOME}/.da"
 
 export ROLLAPP_CHAIN_ID="rollappevm_1234-1"
 export KEY_NAME_ROLLAPP="rol-user"
@@ -65,6 +71,12 @@ And initialize the rollapp:
 
 ```shell
 sh scripts/init.sh
+```
+
+To configure Rollapp-EVM to support Avail as a Data Availability (DA) layer, update the da_config in the (.rollapp_evm/config/dymint.toml) file with the appropriate Avail details. For example:
+
+```bash
+da_config = "{\"seed\": \"bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice\", \"api_url\": \"ws://127.0.0.1:9944\", \"app_id\": 1, \"tip\":10}"
 ```
 
 ### Run rollapp

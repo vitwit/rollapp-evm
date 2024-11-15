@@ -6,9 +6,9 @@ COMMIT := $(shell git log -1 --format='%H')
 LEDGER_ENABLED ?= true
 DRS_VERSION = 1
 
-#ifndef $(CELESTIA_NETWORK)
-#    CELESTIA_NETWORK=mock
-#    export CELESTIA_NETWORK
+#ifndef $(AVAIL_NETWORK)
+#    AVAIL_NETWORK=mock
+#    export AVAIL_NETWORK
 #endif
 
 ifndef BECH32_PREFIX

@@ -67,19 +67,53 @@ EOF
   fi
 fi
 
-GENESIS_HASH=$($EXECUTABLE q genesis-checksum)
+GENESIS_PATH="${ROLLAPP_HOME_DIR}/config/genesis.json"
+GENESIS_HASH=$(sha256sum "$GENESIS_PATH" | awk '{print $1}' | sed 's/[[:space:]]*$//')
+#GENESIS_HASH="PLACEHOLDER"
 
 INITIAL_SUPPLY=$(jq -r '.app_state.bank.supply[0].amount' "${ROLLAPP_HOME_DIR}/config/genesis.json")
 
+if [ "$SETTLEMENT_EXECUTABLE" = "" ]; then
+  DEFAULT_SETTLEMENT_EXECUTABLE=$(which dymd)
+  echo "SETTLEMENT_EXECUTABLE is not set, using '${SETTLEMENT_EXECUTABLE}'"
+  SETTLEMENT_EXECUTABLE=$DEFAULT_SETTLEMENT_EXECUTABLE
+
+  if [ "$SETTLEMENT_EXECUTABLE" = "" ]; then
+    echo "dymension binary not found in PATH. Exiting."
+    exit 1
+  fi
+fi
+
+METADATA_PATH="${ROLLAPP_HOME_DIR}/init/rollapp-metadata.json"
+
+if [ ! -f "$METADATA_PATH" ]; then
+  echo "${METADATA_PATH} does not exist, creating default metadata file"
+  cat <<EOF > "$METADATA_PATH"
+{
+   "description": "",
+  "display_name": "",
+  "explorer_url": "",
+  "fee_denom": null,
+  "genesis_url": "/home/vitwit/.rollapp_evm/config/genesis.json",
+  "logo_url": "",
+  "tagline": "",
+  "telegram": "",
+  "website": "",
+  "x": ""
+}
+EOF
+fi
+
 set -x
-dymd tx rollapp create-rollapp "$ROLLAPP_CHAIN_ID" "$ROLLAPP_ALIAS" EVM \
+"$SETTLEMENT_EXECUTABLE" tx rollapp create-rollapp "$ROLLAPP_CHAIN_ID" "$ROLLAPP_ALIAS" EVM \
   --bech32-prefix "$BECH32_PREFIX" \
   --init-sequencer "*" \
   --genesis-checksum "$GENESIS_HASH" \
   --native-denom "$NATIVE_DENOM_PATH" \
   --initial-supply "$INITIAL_SUPPLY" \
-	--from "$DEPLOYER" \
-	--keyring-backend test \
+  --from "$DEPLOYER" \
+  --keyring-backend test \
   --gas auto --gas-adjustment 1.2 \
-	--fees 1dym
+  --metadata "$METADATA_PATH" \
+  --fees 1dym
 set +x
