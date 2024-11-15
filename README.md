@@ -40,7 +40,6 @@ export the following variables:
 
 ```shell
 export AVAIL_NETWORK="avail" # replace the value with avail
-export AVAIL_HOME_DIR="${HOME}/.da"
 
 export ROLLAPP_CHAIN_ID="rollappevm_1234-1"
 export KEY_NAME_ROLLAPP="rol-user"
@@ -78,6 +77,14 @@ To configure Rollapp-EVM to support Avail as a Data Availability (DA) layer, upd
 ```bash
 da_config = "{\"seed\": \"bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice\", \"api_url\": \"ws://127.0.0.1:9944\", \"app_id\": 1, \"tip\":10}"
 ```
+
+Seed: This is the mnemonic seed phrase associated with your Avail address.
+
+api_url: The API URL of the Avail node used to submit data. To post data to the Turing testnet, use: wss://turing-rpc.avail.so/ws.
+
+app_id: The application ID for the Avail Data Availability (DA) layer.
+
+tip: An optional transaction tip included to incentivize faster processing or prioritization by validators/miners. Including a tip can encourage nodes to process the transaction more quickly than those without a tip.
 
 ### Run rollapp
 

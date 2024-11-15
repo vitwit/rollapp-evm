@@ -49,15 +49,6 @@ if [ "$AVAIL_NETWORK" = "" ]; then
   exit 1
 fi
 
-if [ "$AVAIL_HOME_DIR" = "" ]; then
-  echo "AVAIL_HOME_DIR is not set"
-  exit 1
-fi
-
-if [[ $AVAIL_NETWORK == "mock" ]]; then
-  mkdir -p "$AVAIL_HOME_DIR"
-fi
-
 set_denom() {
   local denom=$1
   local success=true
@@ -180,27 +171,6 @@ set_EVM_params() {
 }
 
 update_configuration() {
-  if [[ ! $AVAIL_NETWORK == "mock" ]]; then
-    celestia_namespace_id=$(openssl rand -hex 10)
-    if [ ! -d "$AVAIL_HOME_DIR" ]; then
-      echo "Celestia light client is expected to be initialized in this directory: $AVAIL_HOME_DIR"
-      echo "but it does not exist, please initialize the light client or update the 'AVAIL_HOME_DIR'"
-      echo "environment variable"
-      exit 1
-    fi
-
-    celestia_token=$(celestia light auth admin --p2p.network "$AVAIL_NETWORK" --node.store "$AVAIL_HOME_DIR")
-
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-      sed -i '' "s/da_layer =.*/da_layer = \"celestia\"/" "${CONFIG_DIRECTORY}/dymint.toml"
-      sed -i '' "s/namespace_id .*/namespace_id = \"${celestia_namespace_id}\"/" "${CONFIG_DIRECTORY}/dymint.toml"
-      sed -i '' "s/da_config .*/da_config = \"{\\\\\"base_url\\\\\": \\\\\"http:\/\/localhost:26658\\\\\", \\\\\"timeout\\\\\": 60000000000, \\\\\"gas_prices\\\\\":1.0, \\\\\"gas_adjustment\\\\\": 1.3, \\\\\"namespace_id\\\\\": \\\\\"${celestia_namespace_id}\\\\\", \\\\\"auth_token\\\\\":\\\\\"${celestia_token}\\\\\"}\"/" "${CONFIG_DIRECTORY}/dymint.toml"
-    else
-      sed -i "s/da_layer =.*/da_layer = \"celestia\"/" "${CONFIG_DIRECTORY}/dymint.toml"
-      sed -i "s/namespace_id .*/namespace_id = \"${celestia_namespace_id}\"/" "${CONFIG_DIRECTORY}/dymint.toml"
-      sed -i "s/da_config .*/da_config = \"{\\\\\"base_url\\\\\": \\\\\"http:\/\/localhost:26658\\\\\", \\\\\"timeout\\\\\": 60000000000, \\\\\"gas_prices\\\\\":1.0, \\\\\"gas_adjustment\\\\\": 1.3, \\\\\"namespace_id\\\\\": \\\\\"${celestia_namespace_id}\\\\\", \\\\\"auth_token\\\\\":\\\\\"${celestia_token}\\\\\"}\"/" "${CONFIG_DIRECTORY}/dymint.toml"
-    fi
-  fi
 
   if [[ ! $SETTLEMENT_LAYER == "mock" ]]; then
     if [[ "$OSTYPE" == "darwin"* ]]; then
