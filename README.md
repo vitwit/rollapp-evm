@@ -23,7 +23,8 @@ It uses Cosmos-SDK's [simapp](https://github.com/cosmos/cosmos-sdk/tree/main/sim
 Clone the repository and checkout to `fix_daconfig` branch
 ```bash
 git clone https://github.com/vitwit/rollapp-evm.git
-git fetch && git checkout rollapp-evm
+cd rollapp-evm
+git fetch && git checkout fix_daconfig
 ```
 
 Build and install the ```rollapp-evm``` binary:
