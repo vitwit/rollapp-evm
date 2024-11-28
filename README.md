@@ -135,6 +135,8 @@ dymd tx bank send $HUB_KEY_WITH_FUNDS $SEQUENCER_ADDR ${TRANSFER_AMOUNT} --keyri
 
 ### Register rollapp on settlement
 
+Update the genesis file URL in the metadata with your RollApp-EVM genesis URL, ensuring it is accessible.
+
 ```shell
 export HUB_PERMISSIONED_KEY="hub-user"
 

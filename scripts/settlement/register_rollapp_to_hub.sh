@@ -94,7 +94,7 @@ if [ ! -f "$METADATA_PATH" ]; then
   "display_name": "",
   "explorer_url": "",
   "fee_denom": null,
-  "genesis_url": "/home/vitwit/.rollapp_evm/config/genesis.json",
+  "genesis_url": "http://localhost:26657/genesis",
   "logo_url": "",
   "tagline": "",
   "telegram": "",
