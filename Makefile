@@ -73,7 +73,7 @@ ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=$(NAME)\
 		  -X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
 	      -X github.com/tendermint/tendermint/version.TMCoreSemVer=$(TM_VERSION) \
 		  -X github.com/dymensionxyz/rollapp-evm/app.AccountAddressPrefix=$(BECH32_PREFIX) \
-		  -X github.com/dymensionxyz/dymint/version.DrsVersion=$(DRS_VERSION) 
+		  -X github.com/dymensionxyz/dymint/version.DRS=$(DRS_VERSION) 
 
 
 BUILD_FLAGS := -tags "$(build_tags)" -ldflags '$(ldflags)'
@@ -173,3 +173,25 @@ release:
 		release --clean --skip=validate
 
 .PHONY: release-dry-run release
+
+# Default DRS_VERSION if not set
+DRS_VERSION ?= default-drs
+
+.PHONY: generate-genesis
+generate-genesis:
+	@if [ -z "$(env)" ]; then \
+		echo "Error: 'env' parameter is required. Use 'make generate-genesis env=mainnet' or 'make generate-genesis env=testnet'"; \
+		exit 1; \
+	fi
+	@if [ "$(env)" != "mainnet" ] && [ "$(env)" != "testnet" ]; then \
+		echo "Error: 'env' must be either 'mainnet' or 'testnet'"; \
+		exit 1; \
+	fi
+	@echo "Building and installing rollapp-evm..."
+	@$(MAKE) install
+	@echo "Removing existing genesis file..."
+	@rm -f ${HOME}/.rollapp_evm/config/genesis.json
+	@echo "Initializing rollapp-evm..."
+	@rollapp-evm init test
+	@echo "Running genesis template script..."
+	@./scripts/generate-genesis-template.sh $(env) $(DRS_VERSION)

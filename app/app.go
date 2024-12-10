@@ -131,8 +131,6 @@ import (
 
 	"github.com/evmos/evmos/v12/ethereum/eip712"
 	ethermint "github.com/evmos/evmos/v12/types"
-	"github.com/evmos/evmos/v12/x/claims"
-	claimskeeper "github.com/evmos/evmos/v12/x/claims/keeper"
 	claimstypes "github.com/evmos/evmos/v12/x/claims/types"
 	"github.com/evmos/evmos/v12/x/erc20"
 	erc20client "github.com/evmos/evmos/v12/x/erc20/client"
@@ -176,14 +174,12 @@ var (
 		ibchost.StoreKey, upgradetypes.StoreKey,
 		epochstypes.StoreKey, hubtypes.StoreKey, hubgentypes.StoreKey,
 		ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
-		// ethermint keys
-		evmtypes.StoreKey, feemarkettypes.StoreKey,
 		rollappparamstypes.StoreKey,
-		// evmos keys
-		erc20types.StoreKey,
-		claimstypes.StoreKey,
-
 		timeupgradetypes.ModuleName,
+		// evmos keys
+		evmtypes.StoreKey,
+		feemarkettypes.StoreKey,
+		erc20types.StoreKey,
 	}
 )
 
@@ -232,15 +228,13 @@ var (
 		hubgenesis.AppModuleBasic{},
 		hub.AppModuleBasic{},
 		timeupgrade.AppModuleBasic{},
+		rollappparams.AppModuleBasic{},
 
-		// Ethermint modules
+		// Evmos moudles
 		evm.AppModuleBasic{},
 		feemarket.AppModuleBasic{},
-		// Evmos moudles
 		erc20.AppModuleBasic{},
 		transfer.AppModuleBasic{AppModuleBasic: &ibctransfer.AppModuleBasic{}},
-		claims.AppModuleBasic{},
-		rollappparams.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -256,7 +250,6 @@ var (
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 		evmtypes.ModuleName:            {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
 		erc20types.ModuleName:          {authtypes.Minter, authtypes.Burner},
-		claimstypes.ModuleName:         nil,
 		hubgentypes.ModuleName:         {authtypes.Minter},
 	}
 
@@ -282,9 +275,6 @@ func init() {
 
 	// manually update the power reduction by replacing micro (u) -> atto (a) evmos
 	sdk.DefaultPowerReduction = ethermint.PowerReduction
-
-	// disable claims on genesis
-	claimstypes.DefaultEnableClaims = false
 }
 
 // App extends an ABCI application, but with most of its parameters exported.
@@ -329,13 +319,10 @@ type App struct {
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
 	ScopedTransferKeeper capabilitykeeper.ScopedKeeper
 
-	// Ethermint keepers
+	// Evmos keepers
 	EvmKeeper       *evmkeeper.Keeper
 	FeeMarketKeeper feemarketkeeper.Keeper
-
-	// Evmos keepers
-	Erc20Keeper  erc20keeper.Keeper
-	ClaimsKeeper *claimskeeper.Keeper
+	Erc20Keeper     erc20keeper.Keeper
 
 	// mm is the module manager
 	mm *module.Manager
@@ -489,12 +476,21 @@ func NewRollapp(
 			app.MintKeeper.Hooks(),
 		),
 	)
+	app.RollappParamsKeeper = rollappparamskeeper.NewKeeper(
+		app.GetSubspace(rollappparamstypes.ModuleName),
+	)
 
 	app.SequencersKeeper = *seqkeeper.NewKeeper(
 		appCodec,
 		keys[seqtypes.StoreKey],
 		app.GetSubspace(seqtypes.ModuleName),
 		authtypes.NewModuleAddress(seqtypes.ModuleName).String(),
+		app.AccountKeeper,
+		app.RollappParamsKeeper,
+		app.UpgradeKeeper,
+		[]seqkeeper.AccountBumpFilterFunc{
+			shouldBumpEvmAccountSequence,
+		},
 	)
 
 	app.TimeUpgradeKeeper = timeupgradekeeper.NewKeeper(
@@ -504,9 +500,6 @@ func NewRollapp(
 	// ... other modules keepers
 	tracer := cast.ToString(appOpts.Get(srvflags.EVMTracer))
 
-	app.RollappParamsKeeper = rollappparamskeeper.NewKeeper(
-		app.GetSubspace(rollappparamstypes.ModuleName),
-	)
 	// Create Ethermint keepers
 	app.FeeMarketKeeper = feemarketkeeper.NewKeeper(
 		appCodec, authtypes.NewModuleAddress(govtypes.ModuleName),
@@ -521,6 +514,11 @@ func NewRollapp(
 		EVMWrappedSeqKeeper{app.SequencersKeeper},
 		app.FeeMarketKeeper,
 		tracer, app.GetSubspace(evmtypes.ModuleName),
+	)
+
+	app.Erc20Keeper = erc20keeper.NewKeeper(
+		keys[erc20types.StoreKey], appCodec, authtypes.NewModuleAddress(govtypes.ModuleName),
+		app.AccountKeeper, app.BankKeeper, app.EvmKeeper, app.StakingKeeper,
 	)
 
 	// Create IBC Keeper
@@ -542,24 +540,9 @@ func NewRollapp(
 		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&app.Erc20Keeper))
 
 	govConfig := govtypes.DefaultConfig()
-	/*
-		Example of setting gov params:
-		govConfig.MaxMetadataLen = 10000
-	*/
 	govKeeper := govkeeper.NewKeeper(
 		appCodec, keys[govtypes.StoreKey], app.GetSubspace(govtypes.ModuleName), app.AccountKeeper, app.BankKeeper,
 		&stakingKeeper, govRouter, app.MsgServiceRouter(), govConfig,
-	)
-
-	// Create evmos keeper
-	app.ClaimsKeeper = claimskeeper.NewKeeper(
-		appCodec, keys[claimstypes.StoreKey], authtypes.NewModuleAddress(govtypes.ModuleName),
-		app.AccountKeeper, app.BankKeeper, &stakingKeeper, app.DistrKeeper, app.IBCKeeper.ChannelKeeper,
-	)
-
-	app.Erc20Keeper = erc20keeper.NewKeeper(
-		keys[erc20types.StoreKey], appCodec, authtypes.NewModuleAddress(govtypes.ModuleName),
-		app.AccountKeeper, app.BankKeeper, app.EvmKeeper, app.StakingKeeper,
 	)
 
 	app.GovKeeper = *govKeeper.SetHooks(
@@ -613,18 +596,9 @@ func NewRollapp(
 		app.Erc20Keeper, // Add ERC20 Keeper for ERC20 transfers
 	)
 
-	// NOTE: app.Erc20Keeper is already initialized elsewhere
-	// Set the ICS4 wrappers for custom module middlewares
-	app.ClaimsKeeper.SetICS4Wrapper(app.IBCKeeper.ChannelKeeper)
-
-	// Override the ICS20 app module
-	transferModule := transfer.NewAppModule(app.TransferKeeper)
-
 	// create IBC module from top to bottom of stack
 	var transferStack ibcporttypes.IBCModule
-
 	transferStack = transfer.NewIBCModule(app.TransferKeeper)
-	transferStack = claims.NewIBCMiddleware(*app.ClaimsKeeper, transferStack)
 	transferStack = denommetadata.NewIBCModule(
 		transferStack,
 		app.BankKeeper,
@@ -681,9 +655,8 @@ func NewRollapp(
 		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper, app.GetSubspace(evmtypes.ModuleName)),
 		feemarket.NewAppModule(app.FeeMarketKeeper, app.GetSubspace(feemarkettypes.ModuleName)),
 		// Evmos app modules
-		transferModule,
+		transfer.NewAppModule(app.TransferKeeper),
 		erc20.NewAppModule(app.Erc20Keeper, app.AccountKeeper, app.GetSubspace(erc20types.ModuleName)),
-		claims.NewAppModule(appCodec, *app.ClaimsKeeper, app.GetSubspace(claimstypes.ModuleName)),
 	}
 
 	app.mm = module.NewManager(modules...)
@@ -711,7 +684,6 @@ func NewRollapp(
 		banktypes.ModuleName,
 		govtypes.ModuleName,
 		erc20types.ModuleName,
-		claimstypes.ModuleName,
 		genutiltypes.ModuleName,
 		feegrant.ModuleName,
 		epochstypes.ModuleName,
@@ -736,7 +708,6 @@ func NewRollapp(
 		vestingtypes.ModuleName,
 		minttypes.ModuleName,
 		erc20types.ModuleName,
-		claimstypes.ModuleName,
 		genutiltypes.ModuleName,
 		feegrant.ModuleName,
 		epochstypes.ModuleName,
@@ -774,8 +745,6 @@ func NewRollapp(
 		ibchost.ModuleName,
 		genutiltypes.ModuleName,
 		erc20types.ModuleName,
-		claimstypes.ModuleName,
-
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		timeupgradetypes.ModuleName,
@@ -844,6 +813,7 @@ func NewRollapp(
 		app.IBCKeeper,
 		app.DistrKeeper,
 		app.SequencersKeeper,
+		app.FeeGrantKeeper,
 	)
 	app.SetAnteHandler(h)
 	app.setPostHandler()
@@ -851,6 +821,8 @@ func NewRollapp(
 	// Admission handler for consensus messages
 	app.setAdmissionHandler(consensus.AllowedMessagesHandler([]string{
 		proto.MessageName(new(seqtypes.ConsensusMsgUpsertSequencer)),
+		proto.MessageName(new(seqtypes.MsgBumpAccountSequences)),
+		proto.MessageName(new(seqtypes.MsgUpgradeDRS)),
 	}))
 
 	if loadLatest {
@@ -908,7 +880,7 @@ func (app *App) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.Respo
 func (app *App) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.ResponseInitChain {
 	var genesisState GenesisState
 	if err := tmjson.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
-		panic(err)
+		panic(fmt.Errorf("failed to unmarshal genesis state on InitChain: %w", err))
 	}
 
 	genesisInfo := app.HubGenesisKeeper.GetGenesisInfo(ctx)
@@ -925,6 +897,18 @@ func (app *App) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.Res
 
 	app.UpgradeKeeper.SetModuleVersionMap(ctx, app.mm.GetVersionMap())
 	res := app.mm.InitGenesis(ctx, app.appCodec, genesisState)
+
+	// Everything needed for the genesis bridge data should be set during the InitGenesis call,
+	// so we query it after and return it in InitChainResponse.
+	genesisBridgeData, err := app.HubGenesisKeeper.PrepareGenesisBridgeData(ctx)
+	if err != nil {
+		panic(fmt.Errorf("failed to prepare genesis bridge data on InitChain: %w", err))
+	}
+	bz, err := tmjson.Marshal(genesisBridgeData)
+	if err != nil {
+		panic(fmt.Errorf("failed to marshal genesis bridge data on InitChain: %w", err))
+	}
+	res.GenesisBridgeDataBytes = bz
 
 	return res
 }
@@ -1116,8 +1100,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(feemarkettypes.ModuleName)
 	// evmos subspaces
 	paramsKeeper.Subspace(erc20types.ModuleName)
-	paramsKeeper.Subspace(claimstypes.ModuleName)
-
 	return paramsKeeper
 }
 
@@ -1145,6 +1127,26 @@ func (app *App) setupUpgradeHandlers() {
 	}
 
 	if upgradeInfo.Name == UpgradeName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
-		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storetypes.StoreUpgrades{}))
+
+		storeUpgrades := storetypes.StoreUpgrades{
+			Deleted: []string{claimstypes.ModuleName},
+		}
+
+		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
 	}
+}
+
+var evmAccountName = proto.MessageName(&ethermint.EthAccount{})
+
+func shouldBumpEvmAccountSequence(accountProtoName string, account authtypes.AccountI) (bool, error) {
+	if accountProtoName != evmAccountName {
+		return false, nil
+	}
+
+	evmAccount, ok := account.(*ethermint.EthAccount)
+	if !ok {
+		// this is really unlikely but let's create a nice error.
+		return false, fmt.Errorf("account is not an EVM account, but it has the same proto name: %T", account)
+	}
+	return evmAccount.Type() == ethermint.AccountTypeEOA, nil
 }
