@@ -1,5 +1,5 @@
 {
-  "genesis_time": "2024-12-09T13:49:53.101151Z",
+  "genesis_time": "2024-12-16T14:08:08.129181Z",
   "chain_id": "rollappevm_1234-1",
   "initial_height": "1",
   "consensus_params": {
@@ -119,7 +119,8 @@
     "erc20": {
       "params": {
         "enable_erc20": true,
-        "enable_evm_hook": true
+        "enable_evm_hook": true,
+        "registration_fee": "10000000000000000000"
       },
       "token_pairs": []
     },
@@ -153,7 +154,8 @@
           "shanghai_block": "0",
           "cancun_block": "0"
         },
-        "allow_unprotected_txs": false
+        "allow_unprotected_txs": false,
+        "gas_denom": "aevmos"
       }
     },
     "feegrant": {
@@ -258,7 +260,8 @@
     "rollappparams": {
       "params": {
         "da": "celestia",
-        "drs_version": 1
+        "drs_version": 3,
+        "min_gas_prices": []
       }
     },
     "sequencers": {
