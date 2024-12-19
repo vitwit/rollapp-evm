@@ -24,7 +24,7 @@ Clone the repository and checkout to `fix_daconfig` branch
 ```bash
 git clone https://github.com/vitwit/rollapp-evm.git
 cd rollapp-evm
-git fetch && git checkout fix_daconfig
+git fetch && git checkout fix_daconfig_upstream
 ```
 
 Build and install the ```rollapp-evm``` binary:
