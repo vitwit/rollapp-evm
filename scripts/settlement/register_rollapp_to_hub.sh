@@ -68,7 +68,7 @@ EOF
 fi
 
 GENESIS_PATH="${ROLLAPP_HOME_DIR}/config/genesis.json"
-GENESIS_HASH=$(sha256sum "$GENESIS_PATH" | awk '{print $1}' | sed 's/[[:space:]]*$//')
+GENESIS_HASH=`$EXECUTABLE q genesis-checksum`
 #GENESIS_HASH="PLACEHOLDER"
 
 INITIAL_SUPPLY=$(jq -r '.app_state.bank.supply[0].amount' "${ROLLAPP_HOME_DIR}/config/genesis.json")
