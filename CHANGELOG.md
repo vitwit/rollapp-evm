@@ -1,3 +1,12 @@
+#  (2025-01-03)
+
+
+### Features
+
+* **genesis-template:** changed delegator default min commision rate to be 0 ([#438](https://github.com/vitwit/rollapp-evm/issues/438)) ([1fcdfb3](https://github.com/vitwit/rollapp-evm/commit/1fcdfb32a6de5e57176c7aea39f3cfb34fee7da2))
+
+
+
 # [](https://github.com/dymensionxyz/rollapp-evm/compare/v2.2.0-rc01...v) (2024-05-20)
 
 
