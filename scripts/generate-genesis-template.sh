@@ -35,6 +35,7 @@ update_params() {
   dasel put -f "$TEMP_GENESIS" '.consensus_params.block.max_gas' -v "400000000" || success=false
   dasel put -f "$TEMP_GENESIS" '.consensus_params.block.max_bytes' -v "$BLOCK_SIZE" || success=false
   dasel put -f "$TEMP_GENESIS" '.consensus_params.evidence.max_bytes' -v "$BLOCK_SIZE" || success=false
+  dasel put -f "$TEMP_GENESIS" 'app_state.staking.params.min_commission_rate' -v "0.000000000000000000" || success=false
   dasel put -f "$TEMP_GENESIS" 'app_state.distribution.params.base_proposer_reward' -v '0.8' || success=false
   dasel put -f "$TEMP_GENESIS" 'app_state.distribution.params.community_tax' -v "0.00002" || success=false
   dasel put -t bool -f "$GENESIS_FILE" 'app_state.feemarket.params.no_base_fee' -v false || success=false
@@ -64,15 +65,17 @@ update_params() {
 
   # these vary depending on environment
   if [ "$ENVIRONMENT" = "mainnet" ]; then
-    UNBONDING_TIME="1814400s" # 2 weeks
+    SEQUENCER_UNBONDING_TIME="1814400s" # 3 weeks
+    DELEGATOR_UNBONDING_TIME="604800s" # 1 weeks
     VOTING_PERIOD="432000s" # 5 days
   else
-    UNBONDING_TIME="1309600s" # ~2 weeks + 1 day
-    VOTING_PERIOD="300s"
+    SEQUENCER_UNBONDING_TIME="1814400s" # 3 weeks
+    DELEGATOR_UNBONDING_TIME="86400s" # 1 day
+    VOTING_PERIOD="300s" # 5 minutes
   fi
   
-  dasel put -f "$TEMP_GENESIS" '.app_state.sequencers.params.unbonding_time' -v "$UNBONDING_TIME" || success=false
-  dasel put -f "$TEMP_GENESIS" '.app_state.staking.params.unbonding_time' -v "$UNBONDING_TIME" || success=false
+  dasel put -f "$TEMP_GENESIS" '.app_state.sequencers.params.unbonding_time' -v "$SEQUENCER_UNBONDING_TIME" || success=false
+  dasel put -f "$TEMP_GENESIS" '.app_state.staking.params.unbonding_time' -v "$DELEGATOR_UNBONDING_TIME" || success=false
   dasel put -f "$TEMP_GENESIS" 'app_state.gov.voting_params.voting_period' -v "$VOTING_PERIOD" || success=false
 
   if [ "$success" = false ]; then
